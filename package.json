@@ -1,0 +1,30 @@
+{
+  "name": "admin-panel",
+  "version": "1.0.0",
+  "description": "A generic, pluggable admin panel",
+  "main": "index.js",
+  "scripts": {
+    "test": "tap test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aredridel/admin-panel.git"
+  },
+  "keywords": [
+    "admin"
+  ],
+  "author": "Aria Stewart <aredridel@dinhe.net>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aredridel/admin-panel/issues"
+  },
+  "homepage": "https://github.com/aredridel/admin-panel#readme",
+  "devDependencies": {
+    "tap": "^1.3.4"
+  },
+  "dependencies": {
+    "bluebird": "^2.9.34",
+    "express": "^5.0.0-alpha.2",
+    "glob": "^5.0.14"
+  }
+}
