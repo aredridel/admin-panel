@@ -25,6 +25,7 @@
   "dependencies": {
     "bluebird": "^2.9.34",
     "express": "^5.0.0-alpha.2",
-    "glob": "^5.0.14"
+    "glob": "^5.0.14",
+    "verror": "^1.6.0"
   }
 }
