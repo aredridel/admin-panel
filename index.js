@@ -7,14 +7,6 @@ var VError = require('verror');
 var glob = P.promisify(require('glob'));
 var fs = P.promisifyAll(require('fs'));
 
-app.on('pluginError', function(module) {
-  console.warn(module.error.toString());
-});
-
-app.on('pluginLoad', function(module) {
-  console.warn("Plugin loaded", module.name);
-});
-
 mountPluginsOnApp(__dirname, app);
 
 app.get('/', function(req, res) {
