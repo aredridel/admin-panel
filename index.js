@@ -7,6 +7,14 @@ var VError = require('verror');
 var glob = P.promisify(require('glob'));
 var fs = P.promisifyAll(require('fs'));
 
+app.on('pluginError', function(module) {
+  console.warn(module.error.toString());
+});
+
+app.on('pluginLoad', function(module) {
+  console.warn("Plugin loaded", module.name);
+});
+
 mountPluginsOnApp(__dirname, app);
 
 app.get('/', function(req, res) {
@@ -17,38 +25,45 @@ app.get('/plugins', function(req, res) {
   res.send(app.plugins);
 });
 
-function mountPluginsOnApp(pluginDir, app) {
+function loadPluginsAndCollectErrors(pluginDir) {
   return glob(path.resolve(pluginDir, 'plugins/lib/node_modules/*/package.json')).then(function(plugins) {
     return plugins.map(function(plugin) {
-      return fs.readFileAsync(plugin).then(JSON.parse).then(attr('name')).then(function(p) {
-        return {
-          name: p,
-          path: plugin,
-          plugin: requirePlugin(p)
-        };
+      return fs.readFileAsync(plugin).then(JSON.parse).then(function(module) {
+        module.implementation = requirePlugin(module.name);
+        return module;
       }).catch(function(e) {
         return {
-          path: plugin,
-          error: new VError(e, "plugin %s failed to load", plugin)
+          name: path.basename(path.dirname(plugin)),
+          error: new VError(e, "Plugin %s failed to load", path.basename(path.dirname(plugin)))
         };
       });
     });
-  }).map(function(f) {
-    if (f.error) {
-      console.warn(f.error.message);
+  });
+
+  function requirePlugin(p) {
+    var module = require(path.resolve(pluginDir, 'plugins/lib/node_modules', p))({});
+    if (!module.plugin || !module.name) {
+      throw new Error("This doesn't look like a plugin");
+    }
+    return module;
+  }
+}
+
+function mountPluginsOnApp(pluginDir, app) {
+  loadPluginsAndCollectErrors(pluginDir).map(function(module) {
+    if (module.error) {
+      app.emit('pluginError', module);
     } else {
-      app.use('/' + f.name, f.plugin);
+      app.emit('pluginLoad', module);
+      app.use('/' + module.name, module.implementation.plugin);
     }
 
-    return f;
+    return module;
   }).then(function(plugins) {
     app.plugins = plugins;
     app.emit('start');
   });
 
-  function requirePlugin(p) {
-    return require(path.resolve(pluginDir, 'plugins/lib/node_modules', p));
-  }
 }
 
 function attr(name) {
