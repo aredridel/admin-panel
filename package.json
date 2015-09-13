@@ -27,6 +27,7 @@
     "bluebird": "^2.9.34",
     "express": "^5.0.0-alpha.2",
     "glob": "^5.0.14",
+    "plugin-module-loader": "^1.0.1",
     "verror": "^1.6.0"
   }
 }

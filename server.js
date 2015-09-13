@@ -1,7 +1,10 @@
 var express = require('express');
-var panel = require('./');
+var Panel = require('./');
 
 var app = express();
+
+var config = tryRequire('./config.json') || {};
+var panel = Panel(config);
 
 app.use('/admin', panel);
 app.get('/', function(req, res) {
@@ -20,3 +23,11 @@ panel.on('pluginError', function(module) {
 panel.on('pluginLoad', function(module) {
   console.warn("Plugin loaded", module.name);
 });
+
+function tryRequire(n) {
+  try {
+    return require(n);
+  } catch (e) {
+    return null;
+  }
+}

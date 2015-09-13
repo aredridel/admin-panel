@@ -1,5 +1,4 @@
 var express = require('express');
-var app = express();
 var P = require('bluebird');
 var path = require('path');
 var VError = require('verror');
@@ -7,66 +6,52 @@ var VError = require('verror');
 var glob = P.promisify(require('glob'));
 var fs = P.promisifyAll(require('fs'));
 
-mountPluginsOnApp(__dirname, app);
+var loadPluginsAndCollectErrors = require('plugin-module-loader').loadPluginsAndCollectErrors;
 
-app.get('/', function(req, res) {
-  res.send('hi');
-});
+module.exports = function(config) {
+  var app = express();
 
-app.get('/plugins', function(req, res) {
-  res.send(app.plugins);
-});
+  mountPluginsOnApp(path.resolve(__dirname, 'plugins'), app);
 
-function loadPluginsAndCollectErrors(pluginDir) {
-  return glob(path.resolve(pluginDir, 'plugins/lib/node_modules/*/package.json')).then(function(plugins) {
-    return plugins.map(function(plugin) {
-      return fs.readFileAsync(plugin).then(JSON.parse).then(function(module) {
-        module.implementation = requirePlugin(module.name);
-        return module;
-      }).catch(function(e) {
-        return {
-          name: path.basename(path.dirname(plugin)),
-          error: new VError(e, "Plugin %s failed to load", path.basename(path.dirname(plugin)))
-        };
-      });
+  app.get('/plugins', function(req, res) {
+    res.send(app.plugins);
+  });
+
+  function mountPluginsOnApp(pluginDir, app) {
+    loadPluginsAndCollectErrors(pluginDir, config).map(function(module) {
+      if (module.error) {
+        app.emit('pluginError', module);
+      } else {
+        app.emit('pluginLoad', module);
+        app.use('/' + module.name, module.implementation.plugin);
+      }
+
+      return module;
+    }).then(function(plugins) {
+      app.plugins = plugins;
+      if (!plugins.some(function(plugin) {
+          if (plugin.name === config.theme) {
+            app.use(plugin.implementation.plugin);
+            return true;
+          }
+        })) {
+        console.warn('no theme loaded');
+      }
+      app.emit('start');
     });
-  });
 
-  function requirePlugin(p) {
-    var module = require(path.resolve(pluginDir, 'plugins/lib/node_modules', p))({});
-    if (!module.plugin || !module.name) {
-      throw new Error("This doesn't look like a plugin");
-    }
-    return module;
   }
-}
 
-function mountPluginsOnApp(pluginDir, app) {
-  loadPluginsAndCollectErrors(pluginDir).map(function(module) {
-    if (module.error) {
-      app.emit('pluginError', module);
-    } else {
-      app.emit('pluginLoad', module);
-      app.use('/' + module.name, module.implementation.plugin);
-    }
+  function attr(name) {
+    return function(o) {
+      return o[name];
+    };
+  }
 
-    return module;
-  }).then(function(plugins) {
-    app.plugins = plugins;
-    app.emit('start');
-  });
+  function log(e) {
+    console.log(e);
+    return e;
+  }
 
-}
-
-function attr(name) {
-  return function(o) {
-    return o[name];
-  };
-}
-
-function log(e) {
-  console.log(e);
-  return e;
-}
-
-module.exports = app;
+  return app;
+};
