@@ -31,7 +31,6 @@ module.exports = function(config) {
       app.plugins = plugins;
       if (!plugins.some(function(plugin) {
           if (plugin.name === config.theme && !plugin.error) {
-            console.warn(plugin);
             app.use(plugin.module);
             return true;
           }
