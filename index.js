@@ -18,20 +18,21 @@ module.exports = function(config) {
   });
 
   function mountPluginsOnApp(pluginDir, app) {
-    loadPluginsAndCollectErrors(pluginDir, config).map(function(module) {
-      if (module.error) {
-        app.emit('pluginError', module);
+    loadPluginsAndCollectErrors(pluginDir).map(function(plugin) {
+      if (plugin.error) {
+        app.emit('pluginError', plugin);
       } else {
-        app.emit('pluginLoad', module);
-        app.use('/' + module.name, module.implementation.plugin);
+        app.emit('pluginLoad', plugin);
+        app.use('/' + plugin.name, plugin.module);
       }
 
-      return module;
+      return plugin;
     }).then(function(plugins) {
       app.plugins = plugins;
       if (!plugins.some(function(plugin) {
-          if (plugin.name === config.theme) {
-            app.use(plugin.implementation.plugin);
+          if (plugin.name === config.theme && !plugin.error) {
+            console.warn(plugin);
+            app.use(plugin.module);
             return true;
           }
         })) {

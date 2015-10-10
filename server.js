@@ -17,7 +17,7 @@ panel.on('start', function() {
 });
 
 panel.on('pluginError', function(module) {
-  console.warn(module.error.toString());
+  console.warn(module.error);
 });
 
 panel.on('pluginLoad', function(module) {
