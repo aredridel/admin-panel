@@ -17,7 +17,7 @@ panel.on('start', function() {
 });
 
 panel.on('pluginError', function(module) {
-  console.warn(module.error);
+  console.warn(module.error.stack);
 });
 
 panel.on('pluginLoad', function(module) {
